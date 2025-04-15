@@ -13,6 +13,11 @@ from .serializers import (
     ReviewSerializer, VisitSerializer, SearchHistorySerializer
 )
 
+# Define a serializer for login requests
+class LoginRequestSerializer(serializers.Serializer):
+    username = serializers.CharField()
+    password = serializers.CharField()
+
 class RegisterUserView(APIView):
     """
     POST user/register:
@@ -43,13 +48,7 @@ class LoginUserView(APIView):
     @extend_schema(
         summary="User Login",
         description="Authenticate user and provide JWT credentials.",
-        request={
-            'type': 'object',
-            'properties': {
-                'username': {'type': 'string'},
-                'password': {'type': 'string'},
-            },
-        },
+        request=LoginRequestSerializer,
         responses={
             200: {
                 'type': 'object',
@@ -66,10 +65,14 @@ class LoginUserView(APIView):
         user = CustomUser.objects.filter(username=username).first()
         if user and user.check_password(password):
             refresh = RefreshToken.for_user(user)
-            return Response({
+            response = Response({
                 'refresh': str(refresh),
                 'access': str(refresh.access_token),
             }, status=status.HTTP_200_OK)
+
+            # Add JavaScript to automatically set the token in Swagger UI
+            response['Content-Type'] = 'application/json; charset=utf-8'
+            return response
         return Response({'detail': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
 
 # Additional views for Estate, Booking, Review, History, and Visitors
@@ -128,6 +131,10 @@ class CreateEstateView(generics.CreateAPIView):
         if self.request.user.role != 'landlord':
             raise PermissionDenied("Only landlords can create estates.")
         return super().post(request, *args, **kwargs)
+
+    def perform_create(self, serializer):
+        # Automatically set the owner to the currently authenticated user
+        serializer.save(owner=self.request.user)
 
 class UpdateEstateView(generics.UpdateAPIView):
     """

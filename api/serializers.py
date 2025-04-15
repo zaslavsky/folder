@@ -21,17 +21,38 @@ class CustomUserSerializer(serializers.ModelSerializer):
 class EstateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Estate
-        fields = '__all__'
+        fields = [
+            'id', 'title', 'description', 'location', 'price', 'is_active', 'owner'
+        ]
+        read_only_fields = ['owner']
+
+    def to_representation(self, instance):
+        # Customize the output representation to include the owner's ID
+        representation = super().to_representation(instance)
+        representation['owner'] = instance.owner.id
+        return representation
 
 class BookingSerializer(serializers.ModelSerializer):
     class Meta:
         model = Booking
         fields = '__all__'
 
+    def to_representation(self, instance):
+        # Customize the output representation to include the tenant's ID
+        representation = super().to_representation(instance)
+        representation['tenant'] = instance.tenant.id
+        return representation
+
 class ReviewSerializer(serializers.ModelSerializer):
     class Meta:
         model = Review
         fields = '__all__'
+
+    def to_representation(self, instance):
+        # Customize the output representation to include the reviewer's ID
+        representation = super().to_representation(instance)
+        representation['reviewer'] = instance.reviewer.id
+        return representation
 
 class VisitSerializer(serializers.ModelSerializer):
     class Meta:
