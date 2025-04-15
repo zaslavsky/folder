@@ -17,6 +17,7 @@ class RegisterUserView(APIView):
     POST user/register:
     Create a new user with login, password, and role.
     """
+    permission_classes = [permissions.AllowAny]
     @swagger_auto_schema(request_body=CustomUserSerializer)
     def post(self, request):
         serializer = CustomUserSerializer(data=request.data)
@@ -30,6 +31,7 @@ class LoginUserView(APIView):
     POST user/login:
     Authenticate user and provide JWT credentials.
     """
+    permission_classes = [permissions.AllowAny]
     @swagger_auto_schema(request_body=openapi.Schema(
         type=openapi.TYPE_OBJECT,
         properties={

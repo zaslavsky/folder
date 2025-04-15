@@ -9,6 +9,9 @@ class CustomUser(AbstractUser):
     ]
     role = models.CharField(max_length=10, choices=ROLE_CHOICES)
 
+    class Meta:
+        db_table = 'api_customuser'
+
 class Estate(models.Model):
     title = models.CharField(max_length=255)
     description = models.TextField()
@@ -16,6 +19,9 @@ class Estate(models.Model):
     price = models.DecimalField(max_digits=10, decimal_places=2)
     is_active = models.BooleanField(default=True)
     owner = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='estates')
+
+    class Meta:
+        db_table = 'api_estate'
 
 class Booking(models.Model):
     STATUS_CHOICES = [
@@ -30,6 +36,9 @@ class Booking(models.Model):
     check_out = models.DateField()
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending')
 
+    class Meta:
+        db_table = 'api_booking'
+
 class Review(models.Model):
     estate = models.ForeignKey(Estate, on_delete=models.CASCADE, related_name='reviews')
     tenant = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='reviews')
@@ -37,12 +46,21 @@ class Review(models.Model):
     comment = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
 
+    class Meta:
+        db_table = 'api_review'
+
 class Visit(models.Model):
     estate = models.ForeignKey(Estate, on_delete=models.CASCADE, related_name='visits')
     visitor = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='visits')
     visited_at = models.DateTimeField(auto_now_add=True)
 
+    class Meta:
+        db_table = 'api_visit'
+
 class SearchHistory(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='search_history')
     query = models.TextField()
     searched_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'api_searchhistory'
