@@ -19,6 +19,7 @@ from django.urls import include, path
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
 from rest_framework.permissions import AllowAny
+from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
 
 # Configure Swagger schema view
 schema_view = get_schema_view(
@@ -31,17 +32,17 @@ schema_view = get_schema_view(
     permission_classes=(AllowAny,),
 )
 
+
 urlpatterns = [
     path('admin/', admin.site.urls),
-]
-
-# Include the API app's URLs
-urlpatterns += [
     path('api/', include('api.urls')),
-]
 
-# Add Swagger documentation routes
-urlpatterns += [
-    path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
-    path('redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
+    # OpenAPI schema (JSON)
+    path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
+
+    # Swagger UI
+    path('api/docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
+
+    # Redoc (alternative UI)
+    path('api/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
 ]

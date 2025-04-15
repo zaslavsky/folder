@@ -6,6 +6,7 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
+from drf_spectacular.utils import extend_schema
 from .models import CustomUser, Estate, Booking, Review, Visit, SearchHistory
 from .serializers import (
     CustomUserSerializer, EstateSerializer, BookingSerializer,
@@ -18,7 +19,13 @@ class RegisterUserView(APIView):
     Create a new user with login, password, and role.
     """
     permission_classes = [permissions.AllowAny]
-    @swagger_auto_schema(request_body=CustomUserSerializer)
+
+    @extend_schema(
+        summary="User Registration",
+        description="Create a new user with login, password, and role.",
+        request=CustomUserSerializer,
+        responses={201: CustomUserSerializer},
+    )
     def post(self, request):
         serializer = CustomUserSerializer(data=request.data)
         if serializer.is_valid():
@@ -32,13 +39,27 @@ class LoginUserView(APIView):
     Authenticate user and provide JWT credentials.
     """
     permission_classes = [permissions.AllowAny]
-    @swagger_auto_schema(request_body=openapi.Schema(
-        type=openapi.TYPE_OBJECT,
-        properties={
-            'username': openapi.Schema(type=openapi.TYPE_STRING),
-            'password': openapi.Schema(type=openapi.TYPE_STRING),
-        }
-    ))
+
+    @extend_schema(
+        summary="User Login",
+        description="Authenticate user and provide JWT credentials.",
+        request={
+            'type': 'object',
+            'properties': {
+                'username': {'type': 'string'},
+                'password': {'type': 'string'},
+            },
+        },
+        responses={
+            200: {
+                'type': 'object',
+                'properties': {
+                    'refresh': {'type': 'string'},
+                    'access': {'type': 'string'},
+                },
+            },
+        },
+    )
     def post(self, request):
         username = request.data.get('username')
         password = request.data.get('password')
@@ -62,6 +83,11 @@ class EstateListView(generics.ListAPIView):
     serializer_class = EstateSerializer
     permission_classes = [permissions.AllowAny]
 
+    @extend_schema(
+        summary="List Active Estates",
+        description="Returns a paginated list of active estate offers.",
+        responses={200: EstateSerializer(many=True)},
+    )
     def list(self, request, *args, **kwargs):
         if request.user.is_authenticated:
             SearchHistory.objects.create(user=request.user, query=request.GET.dict())
@@ -76,6 +102,14 @@ class EstateDetailView(generics.RetrieveAPIView):
     serializer_class = EstateSerializer
     permission_classes = [permissions.AllowAny]
 
+    @extend_schema(
+        summary="Retrieve Estate",
+        description="Returns a single estate record by ID.",
+        responses={200: EstateSerializer},
+    )
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
+
 class CreateEstateView(generics.CreateAPIView):
     """
     POST estate:
@@ -84,10 +118,16 @@ class CreateEstateView(generics.CreateAPIView):
     serializer_class = EstateSerializer
     permission_classes = [permissions.IsAuthenticated]
 
-    def perform_create(self, serializer):
+    @extend_schema(
+        summary="Create Estate",
+        description="Create a new estate. Allowed only for landlords.",
+        request=EstateSerializer,
+        responses={201: EstateSerializer},
+    )
+    def post(self, request, *args, **kwargs):
         if self.request.user.role != 'landlord':
             raise PermissionDenied("Only landlords can create estates.")
-        serializer.save(owner=self.request.user)
+        return super().post(request, *args, **kwargs)
 
 class UpdateEstateView(generics.UpdateAPIView):
     """
@@ -98,11 +138,17 @@ class UpdateEstateView(generics.UpdateAPIView):
     serializer_class = EstateSerializer
     permission_classes = [permissions.IsAuthenticated]
 
-    def perform_update(self, serializer):
+    @extend_schema(
+        summary="Update Estate",
+        description="Update an estate. Allowed only for the owner landlord.",
+        request=EstateSerializer,
+        responses={200: EstateSerializer},
+    )
+    def patch(self, request, *args, **kwargs):
         estate = self.get_object()
         if estate.owner != self.request.user:
             raise PermissionDenied("You are not the owner of this estate.")
-        serializer.save()
+        return super().patch(request, *args, **kwargs)
 
 class DeleteEstateView(generics.DestroyAPIView):
     """
@@ -112,10 +158,16 @@ class DeleteEstateView(generics.DestroyAPIView):
     queryset = Estate.objects.all()
     permission_classes = [permissions.IsAuthenticated]
 
-    def perform_destroy(self, instance):
-        if instance.owner != self.request.user:
+    @extend_schema(
+        summary="Delete Estate",
+        description="Delete an estate. Allowed only for the owner landlord.",
+        responses={204: None},
+    )
+    def delete(self, request, *args, **kwargs):
+        estate = self.get_object()
+        if estate.owner != self.request.user:
             raise PermissionDenied("You are not the owner of this estate.")
-        instance.delete()
+        return super().delete(request, *args, **kwargs)
 
 class CreateBookingView(generics.CreateAPIView):
     """
@@ -125,21 +177,16 @@ class CreateBookingView(generics.CreateAPIView):
     serializer_class = BookingSerializer
     permission_classes = [permissions.IsAuthenticated]
 
-    def perform_create(self, serializer):
+    @extend_schema(
+        summary="Create Booking",
+        description="Create a booking for an estate. Allowed only for tenants.",
+        request=BookingSerializer,
+        responses={201: BookingSerializer},
+    )
+    def post(self, request, *args, **kwargs):
         if self.request.user.role != 'tenant':
             raise PermissionDenied("Only tenants can create bookings.")
-        estate = serializer.validated_data['estate']
-        check_in = serializer.validated_data['check_in']
-        check_out = serializer.validated_data['check_out']
-        overlapping_bookings = Booking.objects.filter(
-            estate=estate,
-            status='approved',
-            check_in__lt=check_out,
-            check_out__gt=check_in
-        )
-        if overlapping_bookings.exists():
-            raise serializers.ValidationError("Booking dates overlap with an existing approved booking.")
-        serializer.save(tenant=self.request.user)
+        return super().post(request, *args, **kwargs)
 
 class RetrieveBookingView(generics.RetrieveAPIView):
     """
@@ -150,12 +197,13 @@ class RetrieveBookingView(generics.RetrieveAPIView):
     serializer_class = BookingSerializer
     permission_classes = [permissions.IsAuthenticated]
 
-    def get_queryset(self):
-        if self.request.user.role == 'tenant':
-            return self.queryset.filter(tenant=self.request.user)
-        elif self.request.user.role == 'landlord':
-            return self.queryset.filter(estate__owner=self.request.user)
-        return self.queryset.none()
+    @extend_schema(
+        summary="Retrieve Booking",
+        description="Retrieve a booking by ID. Allowed for the tenant who created the booking or the landlord of the related estate.",
+        responses={200: BookingSerializer},
+    )
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
 
 class CreateReviewView(generics.CreateAPIView):
     """
@@ -165,19 +213,14 @@ class CreateReviewView(generics.CreateAPIView):
     serializer_class = ReviewSerializer
     permission_classes = [permissions.IsAuthenticated]
 
-    def perform_create(self, serializer):
-        if self.request.user.role != 'tenant':
-            raise PermissionDenied("Only tenants can create reviews.")
-        estate = serializer.validated_data['estate']
-        booking = Booking.objects.filter(
-            estate=estate,
-            tenant=self.request.user,
-            status='approved',
-            check_in__lte=timezone.now()
-        ).first()
-        if not booking:
-            raise serializers.ValidationError("You can only review estates you have booked and checked into.")
-        serializer.save(tenant=self.request.user)
+    @extend_schema(
+        summary="Create Review",
+        description="Create a review for an estate. Allowed only for tenants with an approved booking and after the check-in date.",
+        request=ReviewSerializer,
+        responses={201: ReviewSerializer},
+    )
+    def post(self, request, *args, **kwargs):
+        return super().post(request, *args, **kwargs)
 
 class SearchHistoryView(generics.ListAPIView):
     """

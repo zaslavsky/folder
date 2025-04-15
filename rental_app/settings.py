@@ -125,6 +125,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 default_apps = [
     'rest_framework',
     'rest_framework_simplejwt',
+    'drf_spectacular',
     'drf_yasg',
 ]
 INSTALLED_APPS += default_apps
@@ -140,6 +141,14 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticated',
     ),
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+}
+
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'Мой API',
+    'DESCRIPTION': 'Документация к REST API',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
 }
 
 # Specify the custom user model

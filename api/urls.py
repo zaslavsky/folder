@@ -1,5 +1,6 @@
 from django.urls import path
 from .views import RegisterUserView, LoginUserView, EstateListView, EstateDetailView, CreateEstateView, UpdateEstateView, DeleteEstateView, CreateBookingView, RetrieveBookingView, CreateReviewView, SearchHistoryView, VisitorsView
+from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
 
 urlpatterns = [
     path('user/register/', RegisterUserView.as_view(), name='user-register'),
@@ -34,4 +35,11 @@ urlpatterns += [
     path('review/create/', CreateReviewView.as_view(), name='review-create'),
     path('history/', SearchHistoryView.as_view(), name='search-history'),
     path('visitors/', VisitorsView.as_view(), name='visitors-list'),
+]
+
+# Add routes for drf-spectacular schema and Swagger UI
+urlpatterns += [
+    path('schema/', SpectacularAPIView.as_view(), name='schema'),
+    path('swagger/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
+    path('redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
 ]
