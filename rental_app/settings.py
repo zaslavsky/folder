@@ -144,11 +144,18 @@ REST_FRAMEWORK = {
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 }
 
+desc = """
+    API для приложения Estate4Rent, которое позволяет пользователям арендовать недвижимость.
+    Включает в себя регистрацию пользователей, аутентификацию, создание и просмотр объектов недвижимости.
+
+    !!! Внимание: это ранняя версия API и может содержать ошибки или недоработки. !!!
+    """
+
 SPECTACULAR_SETTINGS = {
-    'TITLE': 'Мой API',
-    'DESCRIPTION': 'Документация к REST API',
-    'VERSION': '1.0.0',
-    'SERVE_INCLUDE_SCHEMA': False,
+    'TITLE': 'Estate4Rent API',
+    'DESCRIPTION': desc,
+    'VERSION': '0.0.1f BETA',
+    'SERVE_INCLUDE_SCHEMA': True,
 }
 
 # Specify the custom user model

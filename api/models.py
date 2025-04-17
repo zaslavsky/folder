@@ -4,8 +4,8 @@ from django.db import models
 class CustomUser(AbstractUser):
     ROLE_CHOICES = [
         ('root', 'Root'),
-        ('tenant', 'Tenant'),
-        ('landlord', 'Landlord'),
+        ('tenant', 'Арендатель'),
+        ('landlord', 'Арендодатель'),
     ]
     role = models.CharField(max_length=10, choices=ROLE_CHOICES)
 
@@ -25,10 +25,10 @@ class Estate(models.Model):
 
 class Booking(models.Model):
     STATUS_CHOICES = [
-        ('pending', 'Pending'),
-        ('approved', 'Approved'),
-        ('declined', 'Declined'),
-        ('cancelled', 'Cancelled'),
+        ('pending', 'Ожидает подтверждения'),
+        ('approved', 'Подтверждён'),
+        ('declined', 'Отклонён'),
+        ('cancelled', 'Отменён'),
     ]
     estate = models.ForeignKey(Estate, on_delete=models.CASCADE, related_name='bookings')
     tenant = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='bookings')

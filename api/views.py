@@ -4,9 +4,8 @@ from rest_framework import generics, permissions, status, serializers
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
-from drf_yasg.utils import swagger_auto_schema
-from drf_yasg import openapi
 from drf_spectacular.utils import extend_schema
+from django_filters.rest_framework import DjangoFilterBackend
 from .models import CustomUser, Estate, Booking, Review, Visit, SearchHistory
 from .serializers import (
     CustomUserSerializer, EstateSerializer, BookingSerializer,
@@ -85,16 +84,13 @@ class EstateListView(generics.ListAPIView):
     queryset = Estate.objects.filter(is_active=True)
     serializer_class = EstateSerializer
     permission_classes = [permissions.AllowAny]
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['title', 'location', 'price', 'is_active']
 
-    @extend_schema(
-        summary="List Active Estates",
-        description="Returns a paginated list of active estate offers.",
-        responses={200: EstateSerializer(many=True)},
-    )
-    def list(self, request, *args, **kwargs):
+    def get(self, request, *args, **kwargs):
         if request.user.is_authenticated:
             SearchHistory.objects.create(user=request.user, query=request.GET.dict())
-        return super().list(request, *args, **kwargs)
+        return super().get(request, *args, **kwargs)
 
 class EstateDetailView(generics.RetrieveAPIView):
     """
@@ -194,6 +190,10 @@ class CreateBookingView(generics.CreateAPIView):
         if self.request.user.role != 'tenant':
             raise PermissionDenied("Only tenants can create bookings.")
         return super().post(request, *args, **kwargs)
+
+    def perform_create(self, serializer):
+        # Automatically set the tenant to the currently authenticated user
+        serializer.save(tenant=self.request.user)
 
 class RetrieveBookingView(generics.RetrieveAPIView):
     """
