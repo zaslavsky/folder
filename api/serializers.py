@@ -35,7 +35,7 @@ class EstateSerializer(serializers.ModelSerializer):
 class BookingSerializer(serializers.ModelSerializer):
     class Meta:
         model = Booking
-        fields = '__all__'
+        fields = ['id', 'estate', 'check_in', 'check_out', 'status']
 
     def to_representation(self, instance):
         # Customize the output representation to include the tenant's ID
